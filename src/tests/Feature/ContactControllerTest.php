@@ -6,6 +6,8 @@ use App\Models\Contact;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
+use Illuminate\Support\Facades\Bus;
+use App\Jobs\ProcessContactCreation;
 
 class ContactControllerTest extends TestCase
 {
@@ -21,8 +23,24 @@ class ContactControllerTest extends TestCase
         $response->assertJsonCount(5, 'data');
     }
 
+    // public function test_can_create_contact()
+    // {
+    //     $data = [
+    //         'name' => $this->faker->name,
+    //         'phone' => $this->faker->phoneNumber,
+    //         'email' => $this->faker->unique()->safeEmail,
+    //     ];
+
+    //     $response = $this->postJson('http://localhost/api/contacts', $data);
+
+    //     $response->assertStatus(201);
+    //     $response->assertJsonFragment($data);
+    // }
+
     public function test_can_create_contact()
     {
+        Bus::fake();
+
         $data = [
             'name' => $this->faker->name,
             'phone' => $this->faker->phoneNumber,
@@ -31,8 +49,13 @@ class ContactControllerTest extends TestCase
 
         $response = $this->postJson('http://localhost/api/contacts', $data);
 
-        $response->assertStatus(201);
-        $response->assertJsonFragment($data);
+        $response->assertStatus(202);
+        $response->assertJson(['message' => 'Contact creation process started!']);
+
+        Bus::assertDispatched(ProcessContactCreation::class, function ($job) use ($data) {
+            // return $job->data === $data;
+            return $job->getData() === $data;
+        });
     }
 
     public function test_can_show_contact()
@@ -49,8 +72,26 @@ class ContactControllerTest extends TestCase
         ]);
     }
 
+    // public function test_can_update_contact()
+    // {
+    //     $contact = Contact::factory()->create();
+
+    //     $data = [
+    //         'name' => $this->faker->name,
+    //         'phone' => $this->faker->phoneNumber,
+    //         'email' => $this->faker->unique()->safeEmail,
+    //     ];
+
+    //     $response = $this->putJson('http://localhost/api/contacts/' . $contact->id, $data);
+
+    //     $response->assertStatus(200);
+    //     $response->assertJsonFragment($data);
+    // }
+
     public function test_can_update_contact()
     {
+        Bus::fake();
+
         $contact = Contact::factory()->create();
 
         $data = [
@@ -61,8 +102,12 @@ class ContactControllerTest extends TestCase
 
         $response = $this->putJson('http://localhost/api/contacts/' . $contact->id, $data);
 
-        $response->assertStatus(200);
-        $response->assertJsonFragment($data);
+        $response->assertStatus(202);
+        $response->assertJson(['message' => 'Contact update process started!']);
+
+        Bus::assertDispatched(ProcessContactUpdate::class, function ($job) use ($contact, $data) {
+            return $job->getData() === $data;
+        });
     }
 
     public function test_can_delete_contact()

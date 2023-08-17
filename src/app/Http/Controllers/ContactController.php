@@ -6,6 +6,8 @@ use App\Repositories\ContactRepositoryInterface;
 use App\Http\Resources\ContactResource;
 use App\Models\Contact;
 use Illuminate\Http\Request;
+use App\Jobs\ProcessContactCreation;
+use App\Jobs\ProcessContactUpdate;
 
 
 class ContactController extends Controller
@@ -33,12 +35,13 @@ class ContactController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10',
+            'phone' => 'sometimes|required|string|max:255',
             'email' => 'required|email|unique:contacts,email',
         ]);
 
-        $contact = $this->contactRepository->create($data);
-        return new ContactResource($contact);
+        ProcessContactCreation::dispatch($data);
+
+        return response()->json(['message' => 'Contact creation process started!'], 202);
     }
 
     /**
@@ -62,7 +65,7 @@ class ContactController extends Controller
     {
         $data = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'phone' => 'sometimes|required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10',
+            'phone' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|unique:contacts,email,' . $id,
         ]);
 
@@ -71,9 +74,9 @@ class ContactController extends Controller
             return response()->json(['error' => 'Contact not found'], 404);
         }
 
-        $updatedContact = $this->contactRepository->update($id, $data);
+        ProcessContactUpdate::dispatch($id, $data);
 
-        return new ContactResource($updatedContact);
+        return response()->json(['message' => 'Contact update process started!'], 202);
     }
 
     /**
