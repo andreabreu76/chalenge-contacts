@@ -21,7 +21,7 @@ services:
       - _net
     ports:
       - 9000:9000
-      - 9001:9001
+      # - 9001:9001
 
   web:
     build:
@@ -54,6 +54,17 @@ services:
       MYSQL_ROOT_PASSWORD: secret
     ports:
       - 3306:3306
+    networks:
+      - _net
+
+  redis:
+    build:
+      context: ./docker/
+      dockerfile: redis.dockerfile
+    image: redis-chalenge-contacts
+    container_name: redis-contacts-database
+    ports:
+      - "6379:6379"
     networks:
       - _net
 
